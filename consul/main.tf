@@ -26,5 +26,10 @@ module "cluster" {
   source = "./stateful"
 }
 
+# module "daemonset" {
+#   source = "./daemonset"
+# }
+
+
 # output
 

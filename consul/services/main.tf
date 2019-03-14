@@ -9,6 +9,7 @@ resource "kubernetes_service" "consul" {
 
   spec {
     type = "NodePort"
+
     selector {
       app = "consul"
     }
