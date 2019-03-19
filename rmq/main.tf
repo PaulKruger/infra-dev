@@ -2,7 +2,7 @@
 
 resource "kubernetes_stateful_set" "rabbitmq" {
   # service and configmap has to be deployed before kubernetes deployment
-  depends_on = ["kubernetes_service.rabbitmq-svc", "kubernetes_service.rabbitmq-svc"]
+  depends_on = ["kubernetes_service.rabbitmq-svc"]
 
   metadata {
     name = "rabbitmq"
@@ -13,7 +13,8 @@ resource "kubernetes_stateful_set" "rabbitmq" {
   }
 
   spec {
-    replicas     = 2
+    # need more than 5 servers to have enough free ports
+    replicas     = 1
     service_name = "rabbitmq"
 
     selector {
@@ -44,20 +45,19 @@ resource "kubernetes_stateful_set" "rabbitmq" {
           image             = "us.gcr.io/tafi-dev/rabbitmq"
           image_pull_policy = "Always"
 
+
           port {
             name           = "http"
             protocol       = "TCP"
             container_port = 15672
             host_port      = 15672
           }
-
           port {
             name           = "amqp"
             protocol       = "TCP"
             container_port = 5672
             host_port      = 5672
           }
-
           liveness_probe {
             exec {
               command = ["rabbitmqctl", "status"]
@@ -67,7 +67,6 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             period_seconds        = 60
             timeout_seconds       = 15
           }
-
           readiness_probe {
             exec {
               command = ["rabbitmqctl", "status"]
@@ -77,7 +76,6 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             period_seconds        = 60
             timeout_seconds       = 10
           }
-
           env {
             name = "MY_POD_IP"
 
@@ -87,22 +85,18 @@ resource "kubernetes_stateful_set" "rabbitmq" {
               }
             }
           }
-
           env {
             name  = "RABBITMQ_USE_LONGNAME"
             value = "true"
           }
-
           env {
             name  = "RABBITMQ_NODENAME"
             value = "rabbit@$(MY_POD_IP)"
           }
-
           env {
             name  = "K8S_SERVICE_NAME"
             value = "rabbitmq"
           }
-
           env {
             name  = "RABBITMQ_ERLANG_COOKIE"
             value = "ZxZqY6UWNZxISrD7+its6tQVQTvVlsOo+IbQ3Mm8elE="
