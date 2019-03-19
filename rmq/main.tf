@@ -1,28 +1,5 @@
 # https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s
 
-resource "kubernetes_config_map" "rabbitmq" {
-  metadata {
-    name = "rabbitmq-config"
-  }
-
-  data {
-    enabled_plugins = <<EOF
-    [rabbitmq_management,rabbitmq_peer_discovery_k8s].
-    EOF
-
-    rabbitmq.conf = <<EOF
-    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
-    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
-    cluster_formation.k8s.address_type = hostname
-    cluster_formation.node_cleanup.interval = 30
-    cluster_formation.node_cleanup.only_log_warning = true
-    cluster_partition_handling = autoheal
-    queue_master_locator=min-masters
-    loopback_users.guest = false
-    EOF
-  }
-}
-
 resource "kubernetes_stateful_set" "rabbitmq" {
   # service and configmap has to be deployed before kubernetes deployment
   depends_on = ["kubernetes_service.rabbitmq-svc", "kubernetes_service.rabbitmq-svc"]
@@ -61,35 +38,11 @@ resource "kubernetes_stateful_set" "rabbitmq" {
       }
 
       spec {
-        # rabbitmq config 
-        volume {
-          name = "rmq-config-volume"
-
-          config_map {
-            name = "rabbitmq-config"
-
-            items {
-              key  = "rabbitmq.conf"
-              path = "rabbitmq.conf"
-            }
-
-            items {
-              key  = "enabled_plugins"
-              path = "enabled_plugins"
-            }
-          }
-        }
-
         # rabbitmq
         container {
           name              = "rabbitmq"
-          image             = "rabbitmq"
+          image             = "us.gcr.io/tafi-dev/rabbitmq"
           image_pull_policy = "Always"
-
-          volume_mount {
-            name       = "rmq-config-volume"
-            mount_path = "/etc/rabbitmq"
-          }
 
           port {
             name           = "http"
@@ -199,18 +152,18 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             mount_path = "/consul/data"
           }
 
-          # leave consul on exit
           lifecycle {
             post_start {
               exec {
                 command = [
                   "/bin/sh",
                   "-c",
-                  "echo $ENABLED_PLUGINS_FILE; ls -la /"
-                  # "consul services register -name=rmq -port=15672 -port=5672",
+                  "consul services register -name=rmq -port=15672 -port=5672",
                 ]
               }
             }
+
+            # leave consul on exit
             pre_stop {
               exec {
                 command = [
