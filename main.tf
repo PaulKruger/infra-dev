@@ -1,7 +1,7 @@
 # Configure the Google Cloud provider
 terraform {
   backend "gcs" {
-    bucket = "tafi-terraform-dev"
+    bucket = "tafi-tf-dev"
   }
 }
 
@@ -53,7 +53,7 @@ module "gke" {
   region                = "${var.region}"
   min_master_version    = "1.12.5-gke.5"
   node_version          = "1.12.5-gke.5"
-  gke_num_nodes         = 1
+  gke_num_nodes         = 5
   vpc_name              = "${module.vpc.vpc_name}"
   subnet_name           = "${module.subnet.subnet_name}"
   gke_node_machine_type = "n1-standard-1"
@@ -81,4 +81,20 @@ module "drone" {
 
 module "tafi-router" {
   source = "./tafi-router"
+}
+
+module "rmq" {
+  source = "./rmq"
+}
+
+module "postgres" {
+  source = "./postgres"
+}
+
+module "mirth-light" {
+  source = "./mirth-light"
+}
+
+module "mirth-heavy" {
+  source = "./mirth-heavy"
 }

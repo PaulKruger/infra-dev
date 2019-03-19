@@ -1,9 +1,9 @@
-resource "kubernetes_deployment" "tafi-router" {
+resource "kubernetes_deployment" "mirth-heavy" {
   metadata {
-    name = "tafi-router"
+    name = "mirth-heavy"
 
     labels {
-      app = "tafi-router"
+      app = "mirth-heavy"
     }
   }
 
@@ -12,32 +12,52 @@ resource "kubernetes_deployment" "tafi-router" {
 
     selector {
       match_labels {
-        app = "tafi-router"
+        app = "mirth-heavy"
       }
     }
 
     template {
       metadata {
         labels {
-          app = "tafi-router"
+          app = "mirth-heavy"
         }
       }
 
       spec {
-        # tafi router
         container {
-          name              = "tafi-router"
-          image             = "us.gcr.io/tafi-dev/tafi-router:dev"
+          name              = "mirth-postgres"
+          image             = "us.gcr.io/tafi-dev/mirth-postgres"
           image_pull_policy = "Always"
 
           port {
-            name           = "tafi-router"
-            host_port      = 8081
-            container_port = 8081
+            container_port = 5432
+            host_port      = 5432
           }
         }
 
-        #  consul agent config
+        # mirth light configuration
+        container {
+          name              = "mirth-heavy"
+          image             = "us.gcr.io/tafi-dev/mirth"
+          image_pull_policy = "Always"
+
+          port {
+            container_port = 8080
+            host_port      = 8080
+          }
+
+          port {
+            container_port = 8443
+            host_port      = 8443
+          }
+
+          port {
+            container_port = 9600
+            host_port      = 9600
+          }
+        }
+
+        # consul agent config
         host_network = true
         dns_policy   = "ClusterFirstWithHostNet"
 
@@ -82,6 +102,16 @@ resource "kubernetes_deployment" "tafi-router" {
 
           # leave consul on exit
           lifecycle {
+            post_start {
+              exec {
+                command = [
+                  "/bin/sh",
+                  "-c",
+                  "consul services register -name=mirth-heavy -port=8080 -port=8443 -port=9600",
+                ]
+              }
+            }
+
             pre_stop {
               exec {
                 command = [
@@ -118,50 +148,39 @@ resource "kubernetes_deployment" "tafi-router" {
   }
 }
 
-resource "kubernetes_service" "tafi-router-svc" {
+resource "kubernetes_service" "mirth-heavy-svc" {
   metadata {
-    name = "tafi-router-svc"
+    name = "mirth-heavy-svc"
 
     labels {
-      app = "tafi-router-svc"
+      app = "mirth-heavy-svc"
     }
   }
 
   spec {
     selector {
-      app = "tafi-router-svc"
+      app = "mirth-heavy-svc"
     }
 
-    type = "LoadBalancer"
+    type = "NodePort"
 
     port {
-      name        = "auth"
-      port        = 8081
-      target_port = 8081
-    }
-
-    port {
-      name        = "user"
-      port        = 8082
-      target_port = 8082
+      name        = "http"
+      port        = 8080
+      target_port = 8080
     }
 
     port {
-      name        = "org"
-      port        = 8083
-      target_port = 8083
+      name        = "https"
+      port        = 8443
+      target_port = 8443
     }
 
+    # sample channel
     port {
-      name        = "patient"
-      port        = 8084
-      target_port = 8084
-    }
-
-    port {
-      name        = "log"
-      port        = 8085
-      target_port = 8085
+      name        = "channel1"
+      port        = 9600
+      target_port = 9600
     }
   }
 }

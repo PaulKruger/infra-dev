@@ -46,10 +46,10 @@ resource "google_container_cluster" "primary" {
   name = "tafi-dev-cluster"
   zone = "${var.region}-c"
 
-  additional_zones = [
-    "${var.region}-a",
-    "${var.region}-f",
-  ]
+  # additional_zones = [
+  #   "${var.region}-a",
+  #   "${var.region}-f",
+  # ]
 
   min_master_version = "${var.min_master_version}"
   node_version       = "${var.node_version}"
@@ -57,7 +57,6 @@ resource "google_container_cluster" "primary" {
   initial_node_count = "${var.gke_num_nodes}"
   network            = "${var.vpc_name}"
   subnetwork         = "${var.subnet_name}"
-
   addons_config {
     http_load_balancing {
       disabled = false
@@ -71,7 +70,6 @@ resource "google_container_cluster" "primary" {
       disabled = false
     }
   }
-
   master_auth {
     username = "${var.gke_username}"
     password = "${var.gke_password}"
@@ -80,7 +78,6 @@ resource "google_container_cluster" "primary" {
       issue_client_certificate = false
     }
   }
-
   node_config {
     oauth_scopes = [
       "https://www.googleapis.com/auth/devstorage.read_only",
