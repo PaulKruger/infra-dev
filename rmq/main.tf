@@ -39,12 +39,15 @@ resource "kubernetes_stateful_set" "rabbitmq" {
       }
 
       spec {
+        # connect as host to access consul agent
+        host_network = "true"
+        dns_policy   = "ClusterFirstWithHostNet"
+
         # rabbitmq
         container {
           name              = "rabbitmq"
           image             = "us.gcr.io/tafi-dev/rabbitmq"
           image_pull_policy = "Always"
-
 
           port {
             name           = "http"
@@ -52,12 +55,14 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             container_port = 15672
             host_port      = 15672
           }
+
           port {
             name           = "amqp"
             protocol       = "TCP"
             container_port = 5672
             host_port      = 5672
           }
+
           liveness_probe {
             exec {
               command = ["rabbitmqctl", "status"]
@@ -67,6 +72,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             period_seconds        = 60
             timeout_seconds       = 15
           }
+
           readiness_probe {
             exec {
               command = ["rabbitmqctl", "status"]
@@ -76,6 +82,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
             period_seconds        = 60
             timeout_seconds       = 10
           }
+
           env {
             name = "MY_POD_IP"
 
@@ -85,18 +92,22 @@ resource "kubernetes_stateful_set" "rabbitmq" {
               }
             }
           }
+
           env {
             name  = "RABBITMQ_USE_LONGNAME"
             value = "true"
           }
+
           env {
             name  = "RABBITMQ_NODENAME"
             value = "rabbit@$(MY_POD_IP)"
           }
+
           env {
             name  = "K8S_SERVICE_NAME"
             value = "rabbitmq"
           }
+
           env {
             name  = "RABBITMQ_ERLANG_COOKIE"
             value = "ZxZqY6UWNZxISrD7+its6tQVQTvVlsOo+IbQ3Mm8elE="
@@ -104,91 +115,91 @@ resource "kubernetes_stateful_set" "rabbitmq" {
         }
 
         #  consul agent config
-        host_network = true
-        dns_policy   = "ClusterFirstWithHostNet"
+        # host_network = true
+        # dns_policy   = "ClusterFirstWithHostNet"
 
-        volume {
-          name = "data1"
+        # volume {
+        #   name = "data1"
 
-          host_path {
-            path = "/tmp"
-          }
-        }
+        #   host_path {
+        #     path = "/tmp"
+        #   }
+        # }
 
-        # consul agent
-        container {
-          name  = "consul-agent"
-          image = "consul:1.4.3"
+        # # consul agent
+        # container {
+        #   name  = "consul-agent"
+        #   image = "consul:1.4.3"
 
-          env {
-            name = "POD_IP"
+        #   env {
+        #     name = "POD_IP"
 
-            value_from {
-              field_ref {
-                field_path = "status.podIP"
-              }
-            }
-          }
+        #     value_from {
+        #       field_ref {
+        #         field_path = "status.podIP"
+        #       }
+        #     }
+        #   }
 
-          args = [
-            "agent",
-            "-advertise=$(POD_IP)",
-            "-bind=0.0.0.0",
-            "-client=127.0.0.1",
-            "-retry-join=consul",
-            "-domain=cluster.local",
-            "-disable-host-node-id",
-            "-data-dir=/consul/data",
-          ]
+        #   args = [
+        #     "agent",
+        #     "-advertise=$(POD_IP)",
+        #     "-bind=0.0.0.0",
+        #     "-client=127.0.0.1",
+        #     "-retry-join=consul",
+        #     "-domain=cluster.local",
+        #     "-disable-host-node-id",
+        #     "-data-dir=/consul/data",
+        #   ]
 
-          volume_mount {
-            name       = "data1"
-            mount_path = "/consul/data"
-          }
+        #   volume_mount {
+        #     name       = "data1"
+        #     mount_path = "/consul/data"
+        #   }
 
-          lifecycle {
-            post_start {
-              exec {
-                command = [
-                  "/bin/sh",
-                  "-c",
-                  "consul services register -name=rmq -port=15672 -port=5672",
-                ]
-              }
-            }
+        #   lifecycle {
+        #     post_start {
+        #       exec {
+        #         command = [
+        #           "/bin/sh",
+        #           "-c",
+        #           "consul services register -name=rmq -port=15672 -port=5672",
+        #         ]
+        #       }
+        #     }
 
-            # leave consul on exit
-            pre_stop {
-              exec {
-                command = [
-                  "/bin/sh",
-                  "-c",
-                  "consul leave",
-                ]
-              }
-            }
-          }
+        #     # leave consul on exit
+        #     pre_stop {
+        #       exec {
+        #         command = [
+        #           "/bin/sh",
+        #           "-c",
+        #           "consul leave",
+        #         ]
+        #       }
+        #     }
+        #   }
 
-          # ports
-          port {
-            name           = "ui-port"
-            protocol       = "TCP"
-            container_port = 8500
-            host_port      = 8500
-          }
+        #   # ports
+        #   port {
+        #     name           = "ui-port"
+        #     protocol       = "TCP"
+        #     container_port = 8500
+        #     host_port      = 8500
+        #   }
 
-          resources {
-            limits {
-              cpu    = "100m"
-              memory = "100Mi"
-            }
+        #   resources {
+        #     limits {
+        #       cpu    = "100m"
+        #       memory = "100Mi"
+        #     }
 
-            requests {
-              cpu    = "50m"
-              memory = "100Mi"
-            }
-          }
-        }
+        #     requests {
+        #       cpu    = "50m"
+        #       memory = "100Mi"
+        #     }
+        #   }
+        # }
       }
     }
   }

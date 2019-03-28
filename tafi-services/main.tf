@@ -1,9 +1,9 @@
-resource "kubernetes_deployment" "mirth-light" {
+resource "kubernetes_deployment" "tafi-services" {
   metadata {
-    name = "mirth-light"
+    name = "tafi-services"
 
     labels {
-      app = "mirth-light"
+      app = "tafi-services"
     }
   }
 
@@ -12,52 +12,55 @@ resource "kubernetes_deployment" "mirth-light" {
 
     selector {
       match_labels {
-        app = "mirth-light"
+        app = "tafi-services"
       }
     }
 
     template {
       metadata {
         labels {
-          app = "mirth-light"
+          app = "tafi-services"
         }
       }
 
       spec {
+        host_network = "true"
+        dns_policy   = "ClusterFirstWithHostNet"
+        
+        # tafi router
         container {
-          name              = "mirth-postgres"
-          image             = "us.gcr.io/tafi-dev/mirth-postgres"
+          name              = "tafi-services"
+          image             = "us.gcr.io/tafi-dev/tafi-services:dev"
           image_pull_policy = "Always"
 
           port {
-            container_port = 5432
-            host_port      = 5432
+            name           = "auth"
+            host_port      = 8081
+            container_port = 8081
+          }
+          port {
+            name           = "user"
+            host_port      = 8082
+            container_port = 8082
+          }
+          port {
+            name           = "org"
+            host_port      = 8083
+            container_port = 8083
+          }
+          port {
+            name           = "patient"
+            host_port      = 8084
+            container_port = 8084
+          }
+          port {
+            name           = "log"
+            host_port      = 8085
+            container_port = 8085
           }
         }
 
-        # mirth light configuration
-        container {
-          name              = "mirth-light"
-          image             = "us.gcr.io/tafi-dev/mirth"
-          image_pull_policy = "Always"
-
-          port {
-            container_port = 8080
-            host_port      = 8080
-          }
-
-          port {
-            container_port = 8443
-            host_port      = 8443
-          }
-
-          port {
-            container_port = 9600
-            host_port      = 9600
-          }
-        }
-
-        # consul agent config
+        #  consul agent config
         # host_network = true
         # dns_policy   = "ClusterFirstWithHostNet"
 
@@ -102,16 +105,6 @@ resource "kubernetes_deployment" "mirth-light" {
 
         #   # leave consul on exit
         #   lifecycle {
-        #     post_start {
-        #       exec {
-        #         command = [
-        #           "/bin/sh",
-        #           "-c",
-        #           "consul services register -name=mirth-light -port=8080 -port=8443 -port=9600",
-        #         ]
-        #       }
-        #     }
-
         #     pre_stop {
         #       exec {
         #         command = [
@@ -148,39 +141,50 @@ resource "kubernetes_deployment" "mirth-light" {
   }
 }
 
-resource "kubernetes_service" "mirth-light-svc" {
+resource "kubernetes_service" "tafi-services-svc" {
   metadata {
-    name = "mirth-light-svc"
+    name = "tafi-services-svc"
 
     labels {
-      app = "mirth-light-svc"
+      app = "tafi-services-svc"
     }
   }
 
   spec {
     selector {
-      app = "mirth-light"
+      app = "tafi-services"
     }
 
     type = "NodePort"
 
     port {
-      name        = "http"
-      port        = 8080
-      target_port = 8080
+      name        = "auth"
+      port        = 8081
+      target_port = 8081
     }
 
     port {
-      name        = "https"
-      port        = 8443
-      target_port = 8443
+      name        = "user"
+      port        = 8082
+      target_port = 8082
     }
 
-    # sample channel
     port {
-      name        = "channel1"
-      port        = 9600
-      target_port = 9600
+      name        = "org"
+      port        = 8083
+      target_port = 8083
+    }
+
+    port {
+      name        = "patient"
+      port        = 8084
+      target_port = 8084
+    }
+
+    port {
+      name        = "log"
+      port        = 8085
+      target_port = 8085
     }
   }
 }

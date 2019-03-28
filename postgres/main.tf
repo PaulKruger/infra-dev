@@ -16,7 +16,7 @@ resource "kubernetes_persistent_volume" "postgres-pv" {
   depends_on = ["kubernetes_config_map.postgres"]
 
   metadata {
-    name = "postgres-pv"
+    name = "postgres-pv-test2"
   }
 
   spec {
@@ -30,7 +30,7 @@ resource "kubernetes_persistent_volume" "postgres-pv" {
 
     persistent_volume_source {
       host_path {
-        path = "/mnt/tafi-postgres/data"
+        path = "/mnt/tafi-postgres/test-data2"
       }
     }
   }
@@ -81,6 +81,10 @@ resource "kubernetes_deployment" "postgres" {
       }
 
       spec {
+        # connect as host to access consul agent
+        host_network = "true"
+        dns_policy   = "ClusterFirstWithHostNet"
+
         # volume for postgres db
         volume {
           name = "postgresdb"
@@ -108,91 +112,91 @@ resource "kubernetes_deployment" "postgres" {
         }
 
         # consul agent config
-        host_network = true
-        dns_policy   = "ClusterFirstWithHostNet"
+        # host_network = true
+        # dns_policy   = "ClusterFirstWithHostNet"
 
-        volume {
-          name = "data1"
+        # volume {
+        #   name = "data1"
 
-          host_path {
-            path = "/tmp"
-          }
-        }
+        #   host_path {
+        #     path = "/tmp"
+        #   }
+        # }
 
-        # consul agent
-        container {
-          name  = "consul-agent"
-          image = "consul:1.4.3"
+        # # consul agent
+        # container {
+        #   name  = "consul-agent"
+        #   image = "consul:1.4.3"
 
-          env {
-            name = "POD_IP"
+        #   env {
+        #     name = "POD_IP"
 
-            value_from {
-              field_ref {
-                field_path = "status.podIP"
-              }
-            }
-          }
+        #     value_from {
+        #       field_ref {
+        #         field_path = "status.podIP"
+        #       }
+        #     }
+        #   }
 
-          args = [
-            "agent",
-            "-advertise=$(POD_IP)",
-            "-bind=0.0.0.0",
-            "-client=127.0.0.1",
-            "-retry-join=consul",
-            "-domain=cluster.local",
-            "-disable-host-node-id",
-            "-data-dir=/consul/data",
-          ]
+        #   args = [
+        #     "agent",
+        #     "-advertise=$(POD_IP)",
+        #     "-bind=0.0.0.0",
+        #     "-client=127.0.0.1",
+        #     "-retry-join=consul",
+        #     "-domain=cluster.local",
+        #     "-disable-host-node-id",
+        #     "-data-dir=/consul/data",
+        #   ]
 
-          volume_mount {
-            name       = "data1"
-            mount_path = "/consul/data"
-          }
+        #   volume_mount {
+        #     name       = "data1"
+        #     mount_path = "/consul/data"
+        #   }
 
-          # leave consul on exit
-          lifecycle {
-            post_start {
-              exec {
-                command = [
-                  "/bin/sh",
-                  "-c",
-                  "consul services register -name=postgres -port=5432",
-                ]
-              }
-            }
+        #   # leave consul on exit
+        #   lifecycle {
+        #     post_start {
+        #       exec {
+        #         command = [
+        #           "/bin/sh",
+        #           "-c",
+        #           "consul services register -name=postgres -port=5432",
+        #         ]
+        #       }
+        #     }
 
-            pre_stop {
-              exec {
-                command = [
-                  "/bin/sh",
-                  "-c",
-                  "consul leave",
-                ]
-              }
-            }
-          }
+        #     pre_stop {
+        #       exec {
+        #         command = [
+        #           "/bin/sh",
+        #           "-c",
+        #           "consul leave",
+        #         ]
+        #       }
+        #     }
+        #   }
 
-          # ports
-          port {
-            name           = "ui-port"
-            protocol       = "TCP"
-            container_port = 8500
-            host_port      = 8500
-          }
+        #   # ports
+        #   port {
+        #     name           = "ui-port"
+        #     protocol       = "TCP"
+        #     container_port = 8500
+        #     host_port      = 8500
+        #   }
 
-          resources {
-            limits {
-              cpu    = "100m"
-              memory = "100Mi"
-            }
+        #   resources {
+        #     limits {
+        #       cpu    = "100m"
+        #       memory = "100Mi"
+        #     }
 
-            requests {
-              cpu    = "50m"
-              memory = "100Mi"
-            }
-          }
-        }
+        #     requests {
+        #       cpu    = "50m"
+        #       memory = "100Mi"
+        #     }
+        #   }
+        # }
       }
     }
   }

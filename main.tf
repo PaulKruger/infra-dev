@@ -83,6 +83,10 @@ module "tafi-router" {
   source = "./tafi-router"
 }
 
+module "tafi-services" {
+  source = "./tafi-services"
+}
+
 module "rmq" {
   source = "./rmq"
 }

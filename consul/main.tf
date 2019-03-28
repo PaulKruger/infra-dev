@@ -26,5 +26,9 @@ module "cluster" {
   source = "./stateful"
 }
 
+module "agent" {
+  source = "./daemonset"
+}
+
 # output
 
