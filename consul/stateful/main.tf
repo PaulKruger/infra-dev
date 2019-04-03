@@ -77,7 +77,7 @@ resource "kubernetes_stateful_set" "consul" {
           ]
 
           volume_mount {
-            name       = "data1"
+            name       = "dev1"
             mount_path = "/consul/data"
           }
 
@@ -145,7 +145,7 @@ resource "kubernetes_stateful_set" "consul" {
 
     volume_claim_template {
       metadata {
-        name = "data1"
+        name = "dev1"
       }
 
       spec {

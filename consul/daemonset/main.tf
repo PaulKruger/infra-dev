@@ -27,7 +27,7 @@ resource "kubernetes_daemonset" "consul-agent" {
         dns_policy   = "ClusterFirstWithHostNet"
 
         volume {
-          name = "data1"
+          name = "dev1"
 
           host_path {
             path = "/tmp"
@@ -63,7 +63,7 @@ resource "kubernetes_daemonset" "consul-agent" {
           ]
 
           volume_mount {
-            name       = "data1"
+            name       = "dev1"
             mount_path = "/consul/data"
           }
 
