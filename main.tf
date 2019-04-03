@@ -87,6 +87,10 @@ module "tafi-services" {
   source = "./tafi-services"
 }
 
+module "feeder" {
+  source = "./feeder"
+}
+
 module "rmq" {
   source = "./rmq"
 }
