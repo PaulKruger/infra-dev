@@ -12,51 +12,52 @@ resource "kubernetes_config_map" "postgres" {
   }
 }
 
-resource "kubernetes_persistent_volume" "postgres-pv" {
-  depends_on = ["kubernetes_config_map.postgres"]
+# resource "kubernetes_persistent_volume" "postgres-pv" {
+#   depends_on = ["kubernetes_config_map.postgres"]
 
-  metadata {
-    name = "postgres-pv-test2"
-  }
+#   metadata {
+#     name = "postgres-pvol-dev"
+#   }
 
-  spec {
-    storage_class_name = "manual"
+#   spec {
+#     storage_class_name = "standard"
 
-    capacity {
-      storage = "5Gi"
-    }
+#     capacity {
+#       storage = "50Gi"
+#     }
 
-    access_modes = ["ReadWriteMany"]
+#     access_modes = ["ReadWriteMany"]
 
-    persistent_volume_source {
-      host_path {
-        path = "/mnt/tafi-postgres/test-data2"
-      }
-    }
-  }
-}
+#     persistent_volume_source {
+#       host_path {
+#         path = "/tafi-postgres/dev-data"
+#       }
+#     }
+#   }
+# }
 
 resource "kubernetes_persistent_volume_claim" "postgres-pvc" {
-  depends_on = ["kubernetes_persistent_volume.postgres-pv"]
+  # depends_on = ["kubernetes_persistent_volume.postgres-pv"]
 
   metadata {
     name = "postgres-pvc"
   }
 
   spec {
-    storage_class_name = "manual"
-    access_modes       = ["ReadWriteMany"]
+    storage_class_name = "standard"
+    access_modes       = ["ReadWriteOnce"]
 
     resources {
       requests {
-        storage = "5Gi"
+        storage = "50Gi"
       }
     }
   }
 }
 
 resource "kubernetes_deployment" "postgres" {
-  depends_on = ["kubernetes_persistent_volume.postgres-pv", "kubernetes_persistent_volume_claim.postgres-pvc"]
+  # depends_on = ["kubernetes_persistent_volume.postgres-pv", "kubernetes_persistent_volume_claim.postgres-pvc"]
+  depends_on = ["kubernetes_persistent_volume_claim.postgres-pvc"]
 
   metadata {
     name = "postgres"
@@ -108,6 +109,11 @@ resource "kubernetes_deployment" "postgres" {
             config_map_ref {
               name = "postgres-config"
             }
+          }
+          volume_mount {
+            mount_path = "/var/lib/postgresql/data"
+            name = "postgresdb"
+            sub_path = "postgres"
           }
 
           env {

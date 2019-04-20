@@ -47,7 +47,9 @@ resource "kubernetes_deployment" "tafi-router" {
 resource "kubernetes_service" "tafi-router-svc" {
   metadata {
     name = "tafi-router-svc"
-
+    # annotations {
+    #   "ingress.kubernetes.io/target-proxy" = "https-target"
+    # }
     labels {
       app = "tafi-router-svc"
     }

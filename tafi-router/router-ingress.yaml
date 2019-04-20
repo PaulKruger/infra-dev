@@ -1,0 +1,9 @@
+    
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tafi-router-ingress
+spec:
+  backend:
+    serviceName: tafi-router-svc
+    servicePort: 8080
