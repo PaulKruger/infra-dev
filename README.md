@@ -61,5 +61,4 @@ to simulate a disaster:
 to restore from backup, run the following command:
 `velero restore create --from-backup tafi-dev-backup`
 
-
 [1] https://heptio.github.io/velero/master/get-started
