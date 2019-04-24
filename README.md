@@ -11,7 +11,7 @@ The following code allows you to generate and mantain a VPC, subnet, and firewal
 Any push in the dev branch of drone should kick off a new image build in google container registry.
 
 ## tafi router ingress
-
+ 
 Applies ingress
 `kubectl apply -f tafi-router/router-ingress.yaml`
 
