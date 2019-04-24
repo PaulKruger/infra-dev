@@ -61,4 +61,5 @@ to simulate a disaster:
 to restore from backup, run the following command:
 `velero restore create --from-backup tafi-dev-backup`
 
-[1] https://heptio.github.io/velero/master/get-started
+[1] https://blog.collaborizm.com/how-to-use-google-managed-ssl-certificates-on-gke-7a56fc514ef8
+[2] https://heptio.github.io/velero/master/get-started
