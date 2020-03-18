@@ -53,3 +53,45 @@ terraform {
 provider "azurerm" {
   version = "~>1.32.0"
 }
+
+# setting up backend - vpc, subnet and firewall
+module "vpc" {
+  location       = var.location
+  address_prefix = var.address_prefix
+  firewall_subnet_prefix = var.firewall_subnet_prefix
+  source         = "./backend/vpc"
+}
+
+module "subnet" {
+  source         = "./backend/subnet"
+  resource_group = var.az_resource_group
+  vpc_name       = module.vpc.vpc_name
+  address_prefix = var.address_prefix
+}
+
+module "firewall" {
+  source        = "./backend/firewall"
+  vpc_name      = module.vpc.vpc_name
+  resource_group = var.az_resource_group
+  location       = var.location
+  ip_cidr_range = module.subnet.ip_cidr_range
+  subnet_id    = module.subnet.subnet_id
+  firewall_subnet_prefix    = var.firewall_subnet_prefix
+  tafi_vpn_address = var.tafi_vpn_address
+}
+
+# setting up kubernetes cluster
+module "kubernetes" {
+  source                = "./kubernetes"
+  location              = var.location
+  az_resource_group        = var.az_resource_group
+  min_master_version    = "1.12.5-gke.5"
+  node_version          = "1.12.5-gke.5"
+  gke_num_nodes         = 5
+  vpc_name              = module.vpc.vpc_name
+  subnet_name           = module.subnet.subnet_name
+  gke_node_machine_type = "n1-standard-1"
+  gke_label             = "tafi-dev"
+  gke_username          = var.gke_username
+  gke_password          = var.gke_password
+}
