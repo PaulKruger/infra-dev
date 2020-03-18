@@ -1,6 +1,13 @@
 ## VPC firewall
-
 # Variables
+variable "location" {
+  description = "Location for creation"
+}
+
+variable "resource_group" {
+  description = "Azure resource group"
+}
+
 variable "vpc_name" {
   description = "network name"
 }
@@ -9,62 +16,84 @@ variable "ip_cidr_range" {
   description = "subnet range"
 }
 
+variable "subnet_id" {
+  description = "Id of the subnet to add to the firewall"
+}
+
+variable "firewall_subnet_prefix" {
+  description = "Prefix for the firewall"
+}
+
+variable "tafi_vpn_address" {
+  description = "TAFi VPN Address"
+}
+
 # main tf code
-resource "google_compute_firewall" "firewall-ing" {
-  name    = "tafi-dev-firewall-ing"
-  network = "${var.vpc_name}"
-
-  allow {
-    protocol = "icmp"
-  }
-
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443", "8500"]
-  }
-
-  allow {
-    protocol = "udp"
-  }
-
-  source_ranges = ["${var.ip_cidr_range}"]
+# firewall subnet
+resource "azurerm_subnet" "subnet" {
+  name                 = "AzureFirewallSubnet"
+  resource_group_name  = var.resource_group
+  virtual_network_name = var.vpc_name
+  address_prefix       = var.firewall_subnet_prefix
 }
 
-# only allow vpn.tafi.io access, ingress rules
-resource "google_compute_firewall" "firewall-vpn-ing" {
-  name    = "tafi-dev-firewall-vpn-ing"
-  network = "${var.vpc_name}"
-
-  allow {
-    protocol = "icmp"
-  }
-
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443", "8500"]
-  }
-
-  allow {
-    protocol = "udp"
-  }
-
-  # 35.232.216.163 - vpn.tafi.io
-  source_ranges = ["35.232.216.163"]
+# public IP address
+resource "azurerm_public_ip" "public_ip" {
+  name                = "tafi-dev_public_ip"
+  location            = var.location
+  resource_group_name = var.resource_group
+  allocation_method   = "Static"
+  sku                 = "Standard"
 }
 
-# Create a firewall rule that allows external SSH, ICMP, and HTTPS:
-resource "google_compute_firewall" "firewall-exg" {
-  name    = "tafi-dev-firewall-exg"
-  network = "${var.vpc_name}"
+# firewall
+resource "azurerm_firewall" "firewall" {
+  name    = "tafi-dev-firewall"
+  location = var.location
+  resource_group_name = var.resource_group
 
-  allow {
-    protocol = "icmp"
+  ip_configuration {
+    name = "tafi-dev-firewall-configuration"
+    subnet_id = azurerm_subnet.subnet.id
+    public_ip_address_id = azurerm_public_ip.public_ip.id
+
   }
+}
 
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443"]
+# Firewall Rules
+resource "azurerm_firewall_network_rule_collection" "example" {
+  name                = "tafi-dev-firewall-rule-collection"
+  azure_firewall_name = azurerm_firewall.firewall.name
+  resource_group_name = var.resource_group
+  priority            = 100
+  action              = "Allow"
+
+  rule {
+    name = "tafi-dev-firewall-ingress-rule-1"
+    source_addresses = [var.ip_cidr_range, var.tafi_vpn_address]
+    destination_ports = ["80", "443", "8500"]
+    destination_addresses = ["*"]
+    protocols = ["TCP"]
   }
-
-  source_ranges = ["0.0.0.0/0"]
+  rule {
+    name = "tafi-dev-firewall-ingress-rule-2"
+    source_addresses = [var.ip_cidr_range, var.tafi_vpn_address]
+    destination_ports = ["*"]
+    destination_addresses = ["*"]
+    protocols = ["ICMP","UDP"]
+  }
+  rule {
+    name = "tafi-dev-firewall-egress-rule-1"
+    source_addresses = ["0.0.0.0/0"]
+    destination_ports = ["*"]
+    destination_addresses = ["*"]
+    protocols = ["ICMP"]
+  }
+  rule {
+    name = "tafi-dev-firewall-egress-rule-2"
+    source_addresses = ["0.0.0.0/0"]
+    destination_ports = ["80", "443"]
+    destination_addresses = ["*"]
+    protocols = ["TCP"]
+  }
 }

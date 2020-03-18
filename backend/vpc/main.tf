@@ -1,16 +1,26 @@
+# Variables
+variable "location" {
+  description = "Location for creation"
+}
+
+variable "address_prefix" {
+  description = "Address prefix to assign"
+}
+
+variable "firewall_subnet_prefix" {
+  description = "Prefix for the firewall"
+}
+
 # Create VPC
-resource "google_compute_network" "vpc" {
-  name                    = "tafi-dev-vpc"
-  auto_create_subnetworks = "false"
+resource "azurerm_virtual_network" "vpc" {
+  name                = "tafi-dev-vpc"
+  location            = var.location
+  address_space       = [var.address_prefix, var.firewall_subnet_prefix]
+  resource_group_name = "TAFiDevStack"
 }
 
 # VPC outputs
 output "vpc_name" {
-  value       = "${google_compute_network.vpc.name}"
+  value       = azurerm_virtual_network.vpc.name
   description = "The unique name of the network"
-}
-
-output "self_link" {
-  value       = "${google_compute_network.vpc.self_link}"
-  description = "The URL of the created resource"
 }
