@@ -29,6 +29,11 @@ variable "firewall_subnet_prefix" {
   description = "Subnet address prefix"
 }
 
+variable "kubernetes_cluster_name" {
+  default = "dev-kubernetes-cluster"
+  description = "Kubernetes cluster name"
+}
+
 variable "gke_username" {
   default     = "p.kruger@craneware.com"
   description = "gke username"
@@ -51,7 +56,8 @@ terraform {
 }
 
 provider "azurerm" {
-  version = "~>1.32.0"
+  version = "~>2.0.0"
+  features {}
 }
 
 # setting up backend - vpc, subnet and firewall
@@ -85,13 +91,22 @@ module "kubernetes" {
   source                = "./kubernetes"
   location              = var.location
   az_resource_group        = var.az_resource_group
-  min_master_version    = "1.12.5-gke.5"
-  node_version          = "1.12.5-gke.5"
-  gke_num_nodes         = 5
-  vpc_name              = module.vpc.vpc_name
-  subnet_name           = module.subnet.subnet_name
-  gke_node_machine_type = "n1-standard-1"
-  gke_label             = "tafi-dev"
-  gke_username          = var.gke_username
-  gke_password          = var.gke_password
+  kubernetes_cluster_name = var.kubernetes_cluster_name
+  az_node_machine_type = "Standard_B2s"
+  az_label             = "tafi-dev"
+  #Subnet
+  subnet_id = module.subnet.subnet_id
 }
+/*
+# setting up consul cluster
+module "consul" {
+  source             = "./consul"
+  # Credentials
+  host     = module.kubernetes.host
+  username = module.kubernetes.username
+  password = module.kubernetes.password
+  client_certificate     = module.kubernetes.client_certificate
+  client_key             = module.kubernetes.client_key
+  cluster_ca_certificate = module.kubernetes.cluster_ca_certificate
+}
+*/
