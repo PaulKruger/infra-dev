@@ -74,7 +74,7 @@ module "subnet" {
   vpc_name       = module.vpc.vpc_name
   address_prefix = var.address_prefix
 }
-
+/*
 module "firewall" {
   source        = "./backend/firewall"
   vpc_name      = module.vpc.vpc_name
@@ -85,7 +85,7 @@ module "firewall" {
   firewall_subnet_prefix    = var.firewall_subnet_prefix
   tafi_vpn_address = var.tafi_vpn_address
 }
-
+*/
 # setting up kubernetes cluster
 module "kubernetes" {
   source                = "./kubernetes"
@@ -97,7 +97,7 @@ module "kubernetes" {
   #Subnet
   subnet_id = module.subnet.subnet_id
 }
-/*
+
 # setting up consul cluster
 module "consul" {
   source             = "./consul"
@@ -109,4 +109,3 @@ module "consul" {
   client_key             = module.kubernetes.client_key
   cluster_ca_certificate = module.kubernetes.cluster_ca_certificate
 }
-*/

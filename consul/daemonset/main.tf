@@ -55,7 +55,7 @@ resource "kubernetes_daemonset" "consul-agent" {
             "-ui",
             "-advertise=$(POD_IP)",
             "-bind=0.0.0.0",
-            "-client=127.0.0.1",
+    #        "-client=127.0.0.1",
             "-retry-join=consul",
             "-domain=cluster.local",
             "-disable-host-node-id",
